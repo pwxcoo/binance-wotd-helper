@@ -18,12 +18,9 @@ After applying all the necessary filters, the script also counts the occurrences
 By using this tool, participants can significantly cut down the number of possible words and focus their effort on a smaller, more targeted subset of words, increasing their chances of success in the WOTD challenge.
 
 ## Usage
-To use the script, simply supply it with a word list file (the script includes links to possible sources for common words and all words). The script expects a text file with one word per line. Run the script using Python, and it will output a filtered and sorted list of word candidates according to the provided criteria.
 
-
-python wotd_helper.py
-
-
+1. Customize your criteria around from line7 to line26 in script `wotd.py`.
+2. Run the script using Python, and it will output a filtered and sorted list of word candidates according to the provided criteria.
 
 ## Requirements
 - Python 3.x

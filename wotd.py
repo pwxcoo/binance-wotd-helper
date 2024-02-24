@@ -6,6 +6,8 @@ def matchWord(fp):
             continue
         if len(word) != 4:
             continue
+        ######  customize your criteria here ############
+
         # Exclude a specific word
         if any(letter in word for letter in ['e', 'a', 'l', 'p', 'o', 't', 'i', 'g']):
             continue
@@ -25,6 +27,7 @@ def matchWord(fp):
         if not all(word[pos] == letter for pos, letter in required_positions):
             continue
 
+        ######  customize your criteria here ############
         matchedList.append(word)
 
     # Count the occurrence of each letter in the words
