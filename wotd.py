@@ -4,27 +4,42 @@ def matchWord(fp):
         word = word.strip()
         if not word.isalpha():
             continue
-        if len(word) != 4:
+        if len(word) != 7:
             continue
         ######  customize your criteria here ############
 
         # Exclude a specific word
-        if any(letter in word for letter in ['e', 'a', 'l', 'p', 'o', 't', 'i', 'g']):
+        if any(letter in word for letter in
+               ['null', 'null', 'null', 'null', 'null', 'null', 'null', 'null', 'null', 'null', 'null', 'null', 'null', 'null', 'null', 'null']):
             continue
 
-        # Must contain certain letters
-        required_letters = {'n'}
-        if not all(letter in word for letter in required_letters):
-            continue
-
-        # Certain letter cannot be at a specific position
-        invalid_positions = [(3 , 'n')]
-        if any(word[pos] == letter for pos, letter in invalid_positions):
+        # Must contain certain letters and Certain letter cannot be at a specific position
+        required_but_invalid_positions_list = [
+            [(0, 'null'), (1, 'null'), (2, 'null'), (3, 'null'), (4, 'null'), (5, 'null'), (6, 'null'), (7, 'null')],
+            [(0, 'null'), (1, 'null'), (2, 'null'), (3, 'null'), (4, 'null'), (5, 'null'), (6, 'null'), (7, 'null')],
+            [(0, 'null'), (1, 'null'), (2, 'null'), (3, 'null'), (4, 'null'), (5, 'null'), (6, 'null'), (7, 'null')],
+            [(0, 'null'), (1, 'null'), (2, 'null'), (3, 'null'), (4, 'null'), (5, 'null'), (6, 'null'), (7, 'null')],
+            [(0, 'null'), (1, 'null'), (2, 'null'), (3, 'null'), (4, 'null'), (5, 'null'), (6, 'null'), (7, 'null')],
+            [(0, 'null'), (1, 'null'), (2, 'null'), (3, 'null'), (4, 'null'), (5, 'null'), (6, 'null'), (7, 'null')]]
+        not_match = False
+        for required_but_invalid_positions in required_but_invalid_positions_list:
+            for pos, letter in required_but_invalid_positions:
+                if letter == 'null':
+                    continue
+                if letter not in word:
+                    not_match = True
+                    break
+                if pos > len(word) and word[pos] == letter:
+                    not_match = True
+                    break
+            if not_match:
+                break
+        if not_match:
             continue
 
         # Certain letter must be at a specific position
-        required_positions = [(0, 's')]
-        if not all(word[pos] == letter for pos, letter in required_positions):
+        required_positions = [(0, 'null'), (1, 'null'), (2, 'null'), (3, 'null'), (4, 'null'), (5, 'null'), (6, 'null'), (7, 'null')]
+        if not all(letter == 'null' or (pos < len(word) and word[pos] == letter) for pos, letter in required_positions):
             continue
 
         ######  customize your criteria here ############
@@ -49,7 +64,7 @@ def matchWord(fp):
     # Sort the list by score in descending order
     sortedWordList.sort(key=lambda x: (unique_letter_count(x[0]), x[1]), reverse=True)
 
-    print([word for word, score in sortedWordList[0:300]])
+    print([word for word, score in sortedWordList[0:50]])
     print(f"Total number of matching words: {len(sortedWordList)}")
 
 # common 10000 words source: https://www.mit.edu/~ecprice/wordlist.10000
