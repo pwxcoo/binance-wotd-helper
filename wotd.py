@@ -29,7 +29,7 @@ def matchWord(fp):
                 if letter not in word:
                     not_match = True
                     break
-                if pos > len(word) and word[pos] == letter:
+                if pos < len(word) and word[pos] == letter:
                     not_match = True
                     break
             if not_match:
