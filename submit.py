@@ -49,7 +49,7 @@ def verify(word, exclude_letter_list, required_but_invalid_positions_list, right
     }
 
     response = requests.request("POST", url, headers=headers, data=payload)
-    print(word + " " + response.text)
+    print(word + ": " + response.text)
     if response.status_code != 200:
         raise Exception("invoke failed: " + response.text)
 
@@ -97,7 +97,7 @@ def sort_words(matchedList):
         for letter in word:
             letter_count[letter] = letter_count.get(letter, 0) + 1
     # Print the letter count result
-    print("Letter count:", letter_count)
+    # print("Letter count:", letter_count)
     # How many different letters are there
     def unique_letter_count(word):
         return len(set(word))
@@ -146,7 +146,7 @@ def nexs_word(letter_count, exclude_letter_list, required_but_invalid_positions_
     matchedList = match_words(letter_count, exclude_letter_list, required_but_invalid_positions_list, right_letter_list, failed_words_list, common_words_list)
     
     if len(matchedList) == 0:
-        matchedList - match_words(letter_count, exclude_letter_list, required_but_invalid_positions_list, right_letter_list, failed_words_list, all_words_list)
+        matchedList = match_words(letter_count, exclude_letter_list, required_but_invalid_positions_list, right_letter_list, failed_words_list, all_words_list)
         
     sort_words_list = sort_words(matchedList)
     return sort_words_list[0] 
@@ -160,6 +160,6 @@ if __name__ == "__main__":
 
     is_correct = False
     tryTime = 0
-    while not is_correct or tryTime < 3:
+    while not is_correct and tryTime < 3:
         tryTime += 1
         is_correct = verify(nexs_word(letter_count, exclude_letter_list, required_but_invalid_positions_list, right_letter_list, failed_words_list), exclude_letter_list, required_but_invalid_positions_list, right_letter_list, failed_words_list)
