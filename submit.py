@@ -149,6 +149,8 @@ def nexs_word(letter_count, exclude_letter_list, required_but_invalid_positions_
         matchedList = match_words(letter_count, exclude_letter_list, required_but_invalid_positions_list, right_letter_list, failed_words_list, all_words_list)
         
     sort_words_list = sort_words(matchedList)
+    if len(sort_words_list) == 0:
+        raise Exception("no word matched")
     return sort_words_list[0] 
     
 
@@ -160,6 +162,6 @@ if __name__ == "__main__":
 
     is_correct = False
     tryTime = 0
-    while not is_correct and tryTime < 3:
+    while not is_correct and tryTime < 6:
         tryTime += 1
         is_correct = verify(nexs_word(letter_count, exclude_letter_list, required_but_invalid_positions_list, right_letter_list, failed_words_list), exclude_letter_list, required_but_invalid_positions_list, right_letter_list, failed_words_list)
