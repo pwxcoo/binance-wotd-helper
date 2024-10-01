@@ -78,7 +78,7 @@ def verify(word, exclude_letter_list, required_but_invalid_positions_list, right
             raise Exception("unknown result: " + response_json['data']['result'])
     
     # 从 exclude_letter_list 中移除在 required_but_invalid_positions_list 中出现的字母
-    letters_to_remove = set(letter for _, letter in required_but_invalid_positions_list)
+    letters_to_remove = set(letter for _, letter in required_but_invalid_positions_list) | set(letter for _, letter in right_letter_list)
     exclude_letter_list = [letter for letter in exclude_letter_list if letter not in letters_to_remove]
     
     print("exclude_letter_list: " + json.dumps(exclude_letter_list))
@@ -142,7 +142,7 @@ def match_words(letter_count, exclude_letter_list, required_but_invalid_position
     
     return matchedList
 
-def nexs_word(letter_count, exclude_letter_list, required_but_invalid_positions_list, right_letter_list, failed_words_list):
+def next_word(letter_count, exclude_letter_list, required_but_invalid_positions_list, right_letter_list, failed_words_list):
     matchedList = match_words(letter_count, exclude_letter_list, required_but_invalid_positions_list, right_letter_list, failed_words_list, common_words_list)
     
     if len(matchedList) == 0:
@@ -164,4 +164,5 @@ if __name__ == "__main__":
     tryTime = 0
     while not is_correct and tryTime < 6:
         tryTime += 1
-        is_correct = verify(nexs_word(letter_count, exclude_letter_list, required_but_invalid_positions_list, right_letter_list, failed_words_list), exclude_letter_list, required_but_invalid_positions_list, right_letter_list, failed_words_list)
+        word = next_word(letter_count, exclude_letter_list, required_but_invalid_positions_list, right_letter_list, failed_words_list)
+        is_correct = verify(word, exclude_letter_list, required_but_invalid_positions_list, right_letter_list, failed_words_list)
