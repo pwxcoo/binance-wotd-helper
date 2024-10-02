@@ -55,8 +55,11 @@ def verify(word, exclude_letter_list, required_but_invalid_positions_list, right
 
     response_json = json.loads(response.text)
     if response_json['success'] != True:
-        failed_words_list.append(word)
-        return False
+        if response_json['code'] == "91151003":
+            raise Exception("超出次数 " + response_json["message"])
+        else:
+            failed_words_list.append(word)
+            return False
 
     if 'data' not in response_json or 'result' not in response_json['data']:
         raise Exception("parse result failed: " + response.text)
@@ -162,7 +165,7 @@ if __name__ == "__main__":
 
     is_correct = False
     tryTime = 0
-    while not is_correct and tryTime < 6:
+    while not is_correct and tryTime < 15:
         tryTime += 1
         word = next_word(letter_count, exclude_letter_list, required_but_invalid_positions_list, right_letter_list, failed_words_list)
         is_correct = verify(word, exclude_letter_list, required_but_invalid_positions_list, right_letter_list, failed_words_list)
