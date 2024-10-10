@@ -82,7 +82,7 @@ def verify(word, exclude_letter_list, required_but_invalid_positions_list, right
     
     # 从 exclude_letter_list 中移除在 required_but_invalid_positions_list 中出现的字母
     letters_to_remove = set(letter for _, letter in required_but_invalid_positions_list) | set(letter for _, letter in right_letter_list)
-    exclude_letter_list = [letter for letter in exclude_letter_list if letter not in letters_to_remove]
+    exclude_letter_list[:] = [letter for letter in exclude_letter_list if letter not in letters_to_remove]
     
     print("exclude_letter_list: " + json.dumps(exclude_letter_list))
     print("required_but_invalid_positions_list: " + json.dumps(required_but_invalid_positions_list))
