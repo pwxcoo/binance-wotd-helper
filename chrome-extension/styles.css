@@ -99,6 +99,10 @@
   margin: 10px 0 12px;
 }
 
+#binance-wotd-helper-root .wotd-top-recommendation {
+  margin-bottom: 12px;
+}
+
 #binance-wotd-helper-root .wotd-toolbar {
   display: grid;
   grid-template-columns: 88px minmax(0, 1fr);

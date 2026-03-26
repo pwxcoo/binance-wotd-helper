@@ -383,6 +383,7 @@
       '  <button type="button" class="wotd-primary-btn" data-action="analyze">刷新候选</button>',
       '</div>',
       '<div class="wotd-help">' + (state.syncFromPage ? '已开启页面同步，会自动读取当前棋盘结果。识别失败时，你也可以手动改下面的线索。' : '当前是手动模式，录入每一轮的猜测词，然后点击颜色格切换：灰(不存在) / 黄(存在但位置不对) / 绿(位置正确)。') + '</div>',
+      '<div class="wotd-top-recommendation"></div>',
       '<div class="wotd-rows"></div>',
       '<div class="wotd-row-actions">',
       '  <button type="button" class="wotd-secondary-btn" data-action="add-row">添加一行</button>',
@@ -889,21 +890,31 @@
 
   function renderAnalysis(payload) {
     const container = runtime.elements.body && runtime.elements.body.querySelector('.wotd-analysis');
+    const topRecommendation = runtime.elements.body && runtime.elements.body.querySelector('.wotd-top-recommendation');
     if (!container) {
       return;
     }
 
     if (payload.status === 'loading') {
+      if (topRecommendation) {
+        topRecommendation.innerHTML = '';
+      }
       container.innerHTML = '<div class="wotd-status is-loading">' + escapeHtml(payload.message || '处理中...') + '</div>';
       return;
     }
 
     if (payload.status === 'error') {
+      if (topRecommendation) {
+        topRecommendation.innerHTML = '';
+      }
       container.innerHTML = '<div class="wotd-status is-error">' + escapeHtml(payload.message || '分析失败') + '</div>';
       return;
     }
 
     if (payload.status !== 'ready') {
+      if (topRecommendation) {
+        topRecommendation.innerHTML = '';
+      }
       container.innerHTML = '<div class="wotd-status">' + escapeHtml(payload.message || '') + '</div>';
       return;
     }
@@ -913,6 +924,10 @@
     const suggestions = analysis.candidates.slice(0, MAX_SUGGESTIONS);
     const notice = payload.message ? '<div class="wotd-status is-success">' + escapeHtml(payload.message) + '</div>' : '';
     const recommendation = payload.recommendedWord ? renderRecommendation(payload.recommendedWord, payload.recommendedSource) : '';
+
+    if (topRecommendation) {
+      topRecommendation.innerHTML = recommendation;
+    }
 
     container.innerHTML = [
       notice,
@@ -928,7 +943,6 @@
       constraintLine('最多包含', summary.maxCounts.length ? summary.maxCounts.join(', ') : '暂无'),
       constraintLine('位置禁用', summary.banned.length ? summary.banned.join(' | ') : '暂无'),
       '</div>',
-      recommendation,
       '<div class="wotd-suggestions">',
       suggestions.length ? suggestions.map(renderSuggestion).join('') : '<div class="wotd-empty">没有匹配结果，可以切换完整词库或检查颜色线索。</div>',
       '</div>',
