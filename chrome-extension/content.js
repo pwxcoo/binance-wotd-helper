@@ -16,6 +16,7 @@
     lastBoardFingerprint: '',
     analysisToken: 0,
     analysisTimer: null,
+    drag: null,
     loadPromises: {
       common: null,
       full: null,
@@ -113,8 +114,11 @@
 
   function normalizeState() {
     state.wordLength = sanitizeWordLength(state.wordLength);
-    state.dictionaryMode = normalizeDictionaryMode(state.dictionaryMode);
-    state.syncFromPage = state.syncFromPage !== false;
+    state.dictionaryMode = 'full';
+    state.syncFromPage = true;
+    state.cluesCollapsed = state.cluesCollapsed !== false;
+    state.candidatesCollapsed = state.candidatesCollapsed !== false;
+    state.panelPosition = normalizePanelPosition(state.panelPosition);
     state.minimized = Boolean(state.minimized);
     state.rows = normalizeRows(state.rows, state.wordLength);
   }
@@ -132,6 +136,19 @@
       return value;
     }
     return 'auto';
+  }
+
+  function normalizePanelPosition(value) {
+    if (!value || typeof value !== 'object') {
+      return { left: null, top: 88 };
+    }
+
+    const left = Number(value.left);
+    const top = Number(value.top);
+    return {
+      left: Number.isFinite(left) ? left : null,
+      top: Number.isFinite(top) ? top : 88,
+    };
   }
 
   function createEmptyPattern(wordLength) {
@@ -189,10 +206,9 @@
       '  <div class="wotd-header">',
       '    <div>',
       '      <div class="wotd-title">WOTD Helper</div>',
-      '      <div class="wotd-subtitle">页面内候选词面板</div>',
+      '      <div class="wotd-subtitle">自动同步 · 完整词库</div>',
       '    </div>',
       '    <div class="wotd-header-actions">',
-      '      <button type="button" class="wotd-icon-btn" data-action="reset" title="清空线索">↺</button>',
       '      <button type="button" class="wotd-icon-btn" data-action="toggle" title="收起/展开">−</button>',
       '    </div>',
       '  </div>',
@@ -205,8 +221,11 @@
     runtime.elements.root = root;
     runtime.elements.body = root.querySelector('.wotd-body');
     runtime.elements.toggleButton = root.querySelector('[data-action="toggle"]');
+    runtime.elements.header = root.querySelector('.wotd-header');
 
+    applyPanelPosition();
     bindStaticEvents();
+    setupDrag();
     renderBody();
   }
 
@@ -232,50 +251,16 @@
         }
         return;
       }
-      if (action === 'reset') {
-        state.rows = normalizeRows([], state.wordLength);
-        runtime.lastNotice = '线索已清空';
+      if (action === 'toggle-clues') {
+        state.cluesCollapsed = !state.cluesCollapsed;
         saveState();
-        renderBody();
+        renderRows();
+        return;
+      }
+      if (action === 'toggle-candidates') {
+        state.candidatesCollapsed = !state.candidatesCollapsed;
+        saveState();
         scheduleAnalysis();
-        return;
-      }
-      if (action === 'add-row') {
-        if (state.rows.length < 8) {
-          state.rows.push(createEmptyRow(state.wordLength));
-          saveState();
-          renderRows();
-          scheduleAnalysis();
-        }
-        return;
-      }
-      if (action === 'analyze') {
-        scheduleAnalysis();
-        return;
-      }
-      if (action === 'sync-now') {
-        const syncResult = syncRowsFromPage();
-        runtime.lastNotice = syncResult ? syncResult.message : '未检测到页面棋盘';
-        renderBody();
-        scheduleAnalysis();
-        return;
-      }
-
-      if (action === 'remove-row') {
-        const rowIndex = Number(target.getAttribute('data-row-index'));
-        if (Number.isInteger(rowIndex) && state.rows.length > 1) {
-          state.rows.splice(rowIndex, 1);
-          saveState();
-          renderRows();
-          scheduleAnalysis();
-        }
-        return;
-      }
-
-      if (action === 'cycle-cell') {
-        const rowIndex = Number(target.getAttribute('data-row-index'));
-        const cellIndex = Number(target.getAttribute('data-cell-index'));
-        cyclePatternCell(rowIndex, cellIndex);
         return;
       }
 
@@ -290,13 +275,102 @@
       }
     });
 
-    root.addEventListener('input', function (event) {
-      handleFieldChange(event.target);
+    root.addEventListener('input', function () {});
+    root.addEventListener('change', function () {});
+  }
+
+  function applyPanelPosition() {
+    const root = runtime.elements.root;
+    if (!root) {
+      return;
+    }
+
+    const width = root.offsetWidth || 388;
+    const margin = 20;
+    const left = Number.isFinite(state.panelPosition.left)
+      ? state.panelPosition.left
+      : Math.max(margin, window.innerWidth - width - margin);
+    const top = Number.isFinite(state.panelPosition.top) ? state.panelPosition.top : 88;
+
+    const clamped = clampPanelPosition(left, top, width, root.offsetHeight || 100);
+    state.panelPosition.left = clamped.left;
+    state.panelPosition.top = clamped.top;
+    root.style.left = clamped.left + 'px';
+    root.style.top = clamped.top + 'px';
+    root.style.right = 'auto';
+  }
+
+  function setupDrag() {
+    const header = runtime.elements.header;
+    const root = runtime.elements.root;
+    if (!header || !root) {
+      return;
+    }
+
+    header.addEventListener('pointerdown', function (event) {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) {
+        return;
+      }
+      if (target.closest('button')) {
+        return;
+      }
+
+      const rect = root.getBoundingClientRect();
+      runtime.drag = {
+        pointerId: event.pointerId,
+        offsetX: event.clientX - rect.left,
+        offsetY: event.clientY - rect.top,
+      };
+      header.setPointerCapture(event.pointerId);
+      root.classList.add('is-dragging');
     });
 
-    root.addEventListener('change', function (event) {
-      handleFieldChange(event.target);
+    header.addEventListener('pointermove', function (event) {
+      if (!runtime.drag || runtime.drag.pointerId !== event.pointerId) {
+        return;
+      }
+
+      const width = root.offsetWidth || 388;
+      const height = root.offsetHeight || 100;
+      const nextLeft = event.clientX - runtime.drag.offsetX;
+      const nextTop = event.clientY - runtime.drag.offsetY;
+      const clamped = clampPanelPosition(nextLeft, nextTop, width, height);
+
+      state.panelPosition.left = clamped.left;
+      state.panelPosition.top = clamped.top;
+      root.style.left = clamped.left + 'px';
+      root.style.top = clamped.top + 'px';
     });
+
+    function finishDrag(event) {
+      if (!runtime.drag || runtime.drag.pointerId !== event.pointerId) {
+        return;
+      }
+      runtime.drag = null;
+      root.classList.remove('is-dragging');
+      saveState();
+      if (header.hasPointerCapture(event.pointerId)) {
+        header.releasePointerCapture(event.pointerId);
+      }
+    }
+
+    header.addEventListener('pointerup', finishDrag);
+    header.addEventListener('pointercancel', finishDrag);
+    window.addEventListener('resize', function () {
+      applyPanelPosition();
+      saveState();
+    });
+  }
+
+  function clampPanelPosition(left, top, width, height) {
+    const margin = 12;
+    const maxLeft = Math.max(margin, window.innerWidth - width - margin);
+    const maxTop = Math.max(margin, window.innerHeight - height - margin);
+    return {
+      left: Math.min(Math.max(margin, left), maxLeft),
+      top: Math.min(Math.max(margin, top), maxTop),
+    };
   }
 
   function handleFieldChange(target) {
@@ -364,67 +438,72 @@
     }
 
     body.innerHTML = [
-      '<div class="wotd-toolbar">',
-      '  <label class="wotd-field">',
-      '    <span class="wotd-label">词长</span>',
-      '    <input type="number" min="4" max="10" step="1" data-role="word-length-input" class="wotd-number-input" value="' + state.wordLength + '">',
-      '  </label>',
-      '  <label class="wotd-field">',
-      '    <span class="wotd-label">词库</span>',
-      '    <select data-role="dictionary-mode" class="wotd-select">',
-      renderDictionaryOptions(),
-      '    </select>',
-      '  </label>',
-      '  <label class="wotd-toggle-field">',
-      '    <input type="checkbox" data-role="sync-from-page"' + (state.syncFromPage ? ' checked' : '') + '>',
-      '    <span>页面同步</span>',
-      '  </label>',
-      '  <button type="button" class="wotd-secondary-btn" data-action="sync-now">立即同步</button>',
-      '  <button type="button" class="wotd-primary-btn" data-action="analyze">刷新候选</button>',
+      '<div class="wotd-summary-bar">',
+      '  <span class="wotd-summary-chip">' + state.wordLength + ' 字母</span>',
+      '  <span class="wotd-summary-chip">完整词库</span>',
+      '  <span class="wotd-summary-chip">自动同步</span>',
       '</div>',
-      '<div class="wotd-help">' + (state.syncFromPage ? '已开启页面同步，会自动读取当前棋盘结果。识别失败时，你也可以手动改下面的线索。' : '当前是手动模式，录入每一轮的猜测词，然后点击颜色格切换：灰(不存在) / 黄(存在但位置不对) / 绿(位置正确)。') + '</div>',
+      '<div class="wotd-help">自动从页面读取棋盘并计算下一词。</div>',
       '<div class="wotd-top-recommendation"></div>',
+      '<div class="wotd-sections">',
+      '  <div class="wotd-section">',
+      '    <button type="button" class="wotd-section-toggle" data-action="toggle-clues">',
+      '      <span>已同步线索</span>',
+      '      <span class="wotd-section-meta" data-role="clue-summary"></span>',
+      '      <span class="wotd-section-arrow">' + (state.cluesCollapsed ? '+' : '−') + '</span>',
+      '    </button>',
+      '  </div>',
       '<div class="wotd-rows"></div>',
-      '<div class="wotd-row-actions">',
-      '  <button type="button" class="wotd-secondary-btn" data-action="add-row">添加一行</button>',
-      '  <span class="wotd-note">“填入”会优先尝试往当前 WOTD 棋盘输入，不再只找普通输入框。</span>',
       '</div>',
+      '<div class="wotd-note">候选词列表默认折叠，面板支持直接拖动。</div>',
       '<div class="wotd-analysis"></div>',
     ].join('');
 
     renderRows();
-    renderAnalysis({ status: 'idle', message: '准备就绪，正在加载词库...' });
-  }
-
-  function renderDictionaryOptions() {
-    const options = [
-      { value: 'auto', label: '常用优先 / 空结果再扩展' },
-      { value: 'common', label: '只用常用词库' },
-      { value: 'full', label: '直接用完整词库' },
-    ];
-
-    return options.map(function (option) {
-      const selected = option.value === state.dictionaryMode ? ' selected' : '';
-      return '<option value="' + option.value + '"' + selected + '>' + option.label + '</option>';
-    }).join('');
+    renderAnalysis({ status: 'idle', message: '正在自动同步页面数据...' });
   }
 
   function renderRows() {
     const container = runtime.elements.body && runtime.elements.body.querySelector('.wotd-rows');
+    const summary = runtime.elements.body && runtime.elements.body.querySelector('[data-role="clue-summary"]');
     if (!container) {
       return;
     }
 
-    container.innerHTML = state.rows.map(function (row, rowIndex) {
-      const readOnlyAttr = state.syncFromPage ? ' readonly' : '';
+    const filledRows = state.rows.filter(function (row) {
+      return row.word || row.pattern.replace(/\./g, '');
+    }).length;
+
+    if (summary) {
+      summary.textContent = filledRows + ' 行';
+    }
+
+    if (state.cluesCollapsed) {
+      container.innerHTML = '';
+      container.classList.add('is-collapsed');
+      return;
+    }
+
+    const visibleRows = state.rows
+      .map(function (row, index) {
+        return { row: row, index: index };
+      })
+      .filter(function (item) {
+        return item.row.word || item.row.pattern.replace(/\./g, '');
+      });
+
+    container.classList.remove('is-collapsed');
+    const rowsToRender = visibleRows.length ? visibleRows : [{ row: state.rows[0], index: 0 }];
+    container.innerHTML = rowsToRender.map(function (item) {
+      const row = item.row;
+      const rowIndex = item.index;
       return [
         '<div class="wotd-row">',
         '  <div class="wotd-row-top">',
         '    <span class="wotd-row-index">#' + (rowIndex + 1) + '</span>',
-        '    <input type="text" spellcheck="false" autocomplete="off" placeholder="guess word" data-role="guess-word" data-row-index="' + rowIndex + '" class="wotd-word-input' + (state.syncFromPage ? ' is-readonly' : '') + '" maxlength="' + state.wordLength + '" value="' + escapeHtml(row.word) + '"' + readOnlyAttr + '>',
-        '    <button type="button" class="wotd-icon-btn wotd-row-remove-btn" data-action="remove-row" data-row-index="' + rowIndex + '" title="删除这一行">×</button>',
+        '    <div class="wotd-row-word">' + escapeHtml(row.word || '·'.repeat(state.wordLength)) + '</div>',
         '  </div>',
-        '  <div class="wotd-pattern-grid">',
+        '  <div class="wotd-pattern-grid is-readonly">',
         renderPatternCells(row.pattern, rowIndex),
         '  </div>',
         '</div>',
@@ -435,17 +514,23 @@
   function renderPatternCells(pattern, rowIndex) {
     return Array.from(pattern).map(function (value, cellIndex) {
       const meta = getPatternMeta(value);
+      const actionAttr = state.cluesCollapsed ? '' : ' data-row-index="' + rowIndex + '" data-cell-index="' + cellIndex + '"';
       return [
-        '<button type="button"',
+        '<div',
         ' class="wotd-pattern-cell is-' + meta.className + '"',
-        ' data-action="cycle-cell"',
-        ' data-row-index="' + rowIndex + '"',
-        ' data-cell-index="' + cellIndex + '"',
+        actionAttr,
         ' title="' + meta.title + '">',
         meta.label,
-        '</button>',
+        '</div>',
       ].join('');
     }).join('');
+  }
+
+  function handleFieldChange() {
+  }
+
+  function renderDictionaryOptions() {
+    return '';
   }
 
   function getPatternMeta(value) {
@@ -491,41 +576,25 @@
   async function analyzeState(token) {
     try {
       let syncMessage = '';
-      if (state.syncFromPage) {
-        const syncResult = syncRowsFromPage();
-        if (syncResult && syncResult.changed) {
-          renderBody();
-        }
-        if (syncResult && syncResult.fingerprint) {
-          runtime.lastBoardFingerprint = syncResult.fingerprint;
-        }
-        syncMessage = syncResult && syncResult.message ? syncResult.message : '';
+      const syncResult = syncRowsFromPage();
+      if (syncResult && syncResult.changed) {
+        renderBody();
       }
+      if (syncResult && syncResult.fingerprint) {
+        runtime.lastBoardFingerprint = syncResult.fingerprint;
+      }
+      syncMessage = syncResult && syncResult.message ? syncResult.message : '';
 
       const completeRows = getCompleteRows();
-      const commonWords = await loadWordList('common');
+      const fullWords = await loadWordList('full');
       if (token !== runtime.analysisToken) {
         return;
       }
 
-      const commonResult = runAnalysis(commonWords, completeRows);
-      let result = commonResult;
-      let sourceLabel = '常用词库';
-      let recommendedWord = commonResult.candidates[0] || '';
-      let recommendedSource = commonResult.candidates[0] ? '常用词优先' : '';
-
-      if (state.dictionaryMode === 'full' || (state.dictionaryMode === 'auto' && commonResult.total === 0 && completeRows.length > 0)) {
-        const fullWords = await loadWordList('full');
-        if (token !== runtime.analysisToken) {
-          return;
-        }
-        result = runAnalysis(fullWords, completeRows);
-        sourceLabel = state.dictionaryMode === 'full' ? '完整词库' : '完整词库(自动扩展)';
-        if (!recommendedWord && result.candidates[0]) {
-          recommendedWord = result.candidates[0];
-          recommendedSource = '完整词库';
-        }
-      }
+      const result = runAnalysis(fullWords, completeRows);
+      const sourceLabel = '完整词库';
+      const recommendedWord = result.candidates[0] || '';
+      const recommendedSource = result.candidates[0] ? '完整词库' : '';
 
       renderAnalysis({
         status: 'ready',
@@ -931,11 +1000,10 @@
 
     container.innerHTML = [
       notice,
-      '<div class="wotd-metrics">',
-      metricCard('已录入线索', String(payload.completeRows)),
-      metricCard('候选数量', String(analysis.total)),
-      metricCard('当前词库', escapeHtml(payload.sourceLabel)),
-      metricCard('线索来源', state.syncFromPage ? '页面' : '手动'),
+      '<div class="wotd-summary-bar">',
+      summaryChip(payload.completeRows + ' 行线索'),
+      summaryChip(analysis.total + ' 个候选'),
+      summaryChip(payload.sourceLabel),
       '</div>',
       '<div class="wotd-constraint-list">',
       constraintLine('固定位置', summary.fixed),
@@ -943,19 +1011,21 @@
       constraintLine('最多包含', summary.maxCounts.length ? summary.maxCounts.join(', ') : '暂无'),
       constraintLine('位置禁用', summary.banned.length ? summary.banned.join(' | ') : '暂无'),
       '</div>',
-      '<div class="wotd-suggestions">',
-      suggestions.length ? suggestions.map(renderSuggestion).join('') : '<div class="wotd-empty">没有匹配结果，可以切换完整词库或检查颜色线索。</div>',
+      '<div class="wotd-section">',
+      '  <button type="button" class="wotd-section-toggle" data-action="toggle-candidates">',
+      '    <span>候选词</span>',
+      '    <span class="wotd-section-meta">' + escapeHtml(String(analysis.total)) + '</span>',
+      '    <span class="wotd-section-arrow">' + (state.candidatesCollapsed ? '+' : '−') + '</span>',
+      '  </button>',
+      state.candidatesCollapsed
+        ? ''
+        : '<div class="wotd-suggestions">' + (suggestions.length ? suggestions.map(renderSuggestion).join('') : '<div class="wotd-empty">没有匹配结果。</div>') + '</div>',
       '</div>',
     ].join('');
   }
 
-  function metricCard(label, value) {
-    return [
-      '<div class="wotd-metric">',
-      '  <div class="wotd-metric-label">' + label + '</div>',
-      '  <div class="wotd-metric-value">' + value + '</div>',
-      '</div>',
-    ].join('');
+  function summaryChip(value) {
+    return '<span class="wotd-summary-chip">' + escapeHtml(value) + '</span>';
   }
 
   function constraintLine(label, value) {
