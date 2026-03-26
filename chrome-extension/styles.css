@@ -377,6 +377,44 @@
   gap: 6px;
 }
 
+#binance-wotd-helper-root .wotd-recommendation {
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(240, 185, 11, 0.35);
+  background: linear-gradient(180deg, rgba(240, 185, 11, 0.16), rgba(240, 185, 11, 0.08));
+}
+
+#binance-wotd-helper-root .wotd-recommendation-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+#binance-wotd-helper-root .wotd-recommendation-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--wotd-primary-strong);
+}
+
+#binance-wotd-helper-root .wotd-recommendation-source {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--wotd-muted);
+}
+
+#binance-wotd-helper-root .wotd-recommendation-word {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+#binance-wotd-helper-root .wotd-recommendation-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
 #binance-wotd-helper-root .wotd-constraint-line {
   display: grid;
   grid-template-columns: 68px minmax(0, 1fr);

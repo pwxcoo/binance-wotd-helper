@@ -507,16 +507,23 @@
         return;
       }
 
-      let result = runAnalysis(commonWords, completeRows);
+      const commonResult = runAnalysis(commonWords, completeRows);
+      let result = commonResult;
       let sourceLabel = '常用词库';
+      let recommendedWord = commonResult.candidates[0] || '';
+      let recommendedSource = commonResult.candidates[0] ? '常用词优先' : '';
 
-      if (state.dictionaryMode === 'full' || (state.dictionaryMode === 'auto' && result.total === 0 && completeRows.length > 0)) {
+      if (state.dictionaryMode === 'full' || (state.dictionaryMode === 'auto' && commonResult.total === 0 && completeRows.length > 0)) {
         const fullWords = await loadWordList('full');
         if (token !== runtime.analysisToken) {
           return;
         }
         result = runAnalysis(fullWords, completeRows);
         sourceLabel = state.dictionaryMode === 'full' ? '完整词库' : '完整词库(自动扩展)';
+        if (!recommendedWord && result.candidates[0]) {
+          recommendedWord = result.candidates[0];
+          recommendedSource = '完整词库';
+        }
       }
 
       renderAnalysis({
@@ -524,6 +531,8 @@
         sourceLabel: sourceLabel,
         completeRows: completeRows.length,
         result: result,
+        recommendedWord: recommendedWord,
+        recommendedSource: recommendedSource,
         message: joinNotice(syncMessage, runtime.lastNotice),
       });
       runtime.lastNotice = '';
@@ -903,6 +912,7 @@
     const summary = analysis.summary;
     const suggestions = analysis.candidates.slice(0, MAX_SUGGESTIONS);
     const notice = payload.message ? '<div class="wotd-status is-success">' + escapeHtml(payload.message) + '</div>' : '';
+    const recommendation = payload.recommendedWord ? renderRecommendation(payload.recommendedWord, payload.recommendedSource) : '';
 
     container.innerHTML = [
       notice,
@@ -918,6 +928,7 @@
       constraintLine('最多包含', summary.maxCounts.length ? summary.maxCounts.join(', ') : '暂无'),
       constraintLine('位置禁用', summary.banned.length ? summary.banned.join(' | ') : '暂无'),
       '</div>',
+      recommendation,
       '<div class="wotd-suggestions">',
       suggestions.length ? suggestions.map(renderSuggestion).join('') : '<div class="wotd-empty">没有匹配结果，可以切换完整词库或检查颜色线索。</div>',
       '</div>',
@@ -948,6 +959,24 @@
       '  <div class="wotd-suggestion-word">' + escapeHtml(word) + '</div>',
       '  <div class="wotd-suggestion-actions">',
       '    <button type="button" class="wotd-secondary-btn" data-action="fill-word" data-word="' + escapeHtml(word) + '">填入</button>',
+      '    <button type="button" class="wotd-ghost-btn" data-action="copy-word" data-word="' + escapeHtml(word) + '">复制</button>',
+      '  </div>',
+      '</div>',
+    ].join('');
+  }
+
+  function renderRecommendation(word, source) {
+    return [
+      '<div class="wotd-recommendation">',
+      '  <div class="wotd-recommendation-head">',
+      '    <div>',
+      '      <div class="wotd-recommendation-label">推荐下一词</div>',
+      '      <div class="wotd-recommendation-source">' + escapeHtml(source || '当前词库') + '</div>',
+      '    </div>',
+      '    <div class="wotd-recommendation-word">' + escapeHtml(word) + '</div>',
+      '  </div>',
+      '  <div class="wotd-recommendation-actions">',
+      '    <button type="button" class="wotd-primary-btn" data-action="fill-word" data-word="' + escapeHtml(word) + '">填入推荐词</button>',
       '    <button type="button" class="wotd-ghost-btn" data-action="copy-word" data-word="' + escapeHtml(word) + '">复制</button>',
       '  </div>',
       '</div>',
