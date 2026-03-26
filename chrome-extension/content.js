@@ -7,11 +7,13 @@
   const DEFAULT_ROWS = 4;
   const PAGE_CHECK_INTERVAL_MS = 1200;
   const MAX_SUGGESTIONS = 18;
+  const KEYBOARD_ZONE_TOP_RATIO = 0.62;
 
   const state = loadState();
   const runtime = {
     mounted: false,
     lastUrl: location.href,
+    lastBoardFingerprint: '',
     analysisToken: 0,
     analysisTimer: null,
     loadPromises: {
@@ -34,10 +36,12 @@
     setInterval(function () {
       if (runtime.lastUrl !== location.href) {
         runtime.lastUrl = location.href;
+        runtime.lastBoardFingerprint = '';
         window.setTimeout(ensureMounted, 250);
         return;
       }
       ensureMounted();
+      maybeRefreshFromPageBoard();
     }, PAGE_CHECK_INTERVAL_MS);
   }
 
@@ -110,6 +114,7 @@
   function normalizeState() {
     state.wordLength = sanitizeWordLength(state.wordLength);
     state.dictionaryMode = normalizeDictionaryMode(state.dictionaryMode);
+    state.syncFromPage = state.syncFromPage !== false;
     state.minimized = Boolean(state.minimized);
     state.rows = normalizeRows(state.rows, state.wordLength);
   }
@@ -248,6 +253,13 @@
         scheduleAnalysis();
         return;
       }
+      if (action === 'sync-now') {
+        const syncResult = syncRowsFromPage();
+        runtime.lastNotice = syncResult ? syncResult.message : '未检测到页面棋盘';
+        renderBody();
+        scheduleAnalysis();
+        return;
+      }
 
       if (action === 'remove-row') {
         const rowIndex = Number(target.getAttribute('data-row-index'));
@@ -311,6 +323,20 @@
       return;
     }
 
+    if (target.matches('[data-role="sync-from-page"]')) {
+      state.syncFromPage = Boolean(target.checked);
+      saveState();
+      if (state.syncFromPage) {
+        const syncResult = syncRowsFromPage();
+        runtime.lastNotice = syncResult ? syncResult.message : '未检测到页面棋盘';
+      } else {
+        runtime.lastBoardFingerprint = '';
+      }
+      renderBody();
+      scheduleAnalysis();
+      return;
+    }
+
     if (target.matches('[data-role="guess-word"]')) {
       const rowIndex = Number(target.getAttribute('data-row-index'));
       if (!Number.isInteger(rowIndex) || !state.rows[rowIndex]) {
@@ -349,13 +375,18 @@
       renderDictionaryOptions(),
       '    </select>',
       '  </label>',
+      '  <label class="wotd-toggle-field">',
+      '    <input type="checkbox" data-role="sync-from-page"' + (state.syncFromPage ? ' checked' : '') + '>',
+      '    <span>页面同步</span>',
+      '  </label>',
+      '  <button type="button" class="wotd-secondary-btn" data-action="sync-now">立即同步</button>',
       '  <button type="button" class="wotd-primary-btn" data-action="analyze">刷新候选</button>',
       '</div>',
-      '<div class="wotd-help">录入每一轮的猜测词，然后点击颜色格切换：灰(不存在) / 黄(存在但位置不对) / 绿(位置正确)。</div>',
+      '<div class="wotd-help">' + (state.syncFromPage ? '已开启页面同步，会自动读取当前棋盘结果。识别失败时，你也可以手动改下面的线索。' : '当前是手动模式，录入每一轮的猜测词，然后点击颜色格切换：灰(不存在) / 黄(存在但位置不对) / 绿(位置正确)。') + '</div>',
       '<div class="wotd-rows"></div>',
       '<div class="wotd-row-actions">',
       '  <button type="button" class="wotd-secondary-btn" data-action="add-row">添加一行</button>',
-      '  <span class="wotd-note">建议先在页面里点一下当前输入框，再点下面的“填入”。</span>',
+      '  <span class="wotd-note">“填入”会优先尝试往当前 WOTD 棋盘输入，不再只找普通输入框。</span>',
       '</div>',
       '<div class="wotd-analysis"></div>',
     ].join('');
@@ -384,11 +415,12 @@
     }
 
     container.innerHTML = state.rows.map(function (row, rowIndex) {
+      const readOnlyAttr = state.syncFromPage ? ' readonly' : '';
       return [
         '<div class="wotd-row">',
         '  <div class="wotd-row-top">',
         '    <span class="wotd-row-index">#' + (rowIndex + 1) + '</span>',
-        '    <input type="text" spellcheck="false" autocomplete="off" placeholder="guess word" data-role="guess-word" data-row-index="' + rowIndex + '" class="wotd-word-input" maxlength="' + state.wordLength + '" value="' + escapeHtml(row.word) + '">',
+        '    <input type="text" spellcheck="false" autocomplete="off" placeholder="guess word" data-role="guess-word" data-row-index="' + rowIndex + '" class="wotd-word-input' + (state.syncFromPage ? ' is-readonly' : '') + '" maxlength="' + state.wordLength + '" value="' + escapeHtml(row.word) + '"' + readOnlyAttr + '>',
         '    <button type="button" class="wotd-icon-btn wotd-row-remove-btn" data-action="remove-row" data-row-index="' + rowIndex + '" title="删除这一行">×</button>',
         '  </div>',
         '  <div class="wotd-pattern-grid">',
@@ -457,6 +489,18 @@
 
   async function analyzeState(token) {
     try {
+      let syncMessage = '';
+      if (state.syncFromPage) {
+        const syncResult = syncRowsFromPage();
+        if (syncResult && syncResult.changed) {
+          renderBody();
+        }
+        if (syncResult && syncResult.fingerprint) {
+          runtime.lastBoardFingerprint = syncResult.fingerprint;
+        }
+        syncMessage = syncResult && syncResult.message ? syncResult.message : '';
+      }
+
       const completeRows = getCompleteRows();
       const commonWords = await loadWordList('common');
       if (token !== runtime.analysisToken) {
@@ -480,7 +524,7 @@
         sourceLabel: sourceLabel,
         completeRows: completeRows.length,
         result: result,
-        message: runtime.lastNotice,
+        message: joinNotice(syncMessage, runtime.lastNotice),
       });
       runtime.lastNotice = '';
     } catch (error) {
@@ -489,6 +533,54 @@
         message: error && error.message ? error.message : '分析失败',
       });
     }
+  }
+
+  function maybeRefreshFromPageBoard() {
+    if (!runtime.mounted || !state.syncFromPage) {
+      return;
+    }
+
+    const boardState = readBoardStateFromPage();
+    const fingerprint = boardState ? getBoardFingerprint(boardState) : '';
+    if (!fingerprint || fingerprint === runtime.lastBoardFingerprint) {
+      return;
+    }
+
+    runtime.lastBoardFingerprint = fingerprint;
+    scheduleAnalysis();
+  }
+
+  function syncRowsFromPage() {
+    const boardState = readBoardStateFromPage();
+    if (!boardState) {
+      return null;
+    }
+
+    const nextRows = boardState.rows.length ? boardState.rows.slice(0, 8) : [];
+    while (nextRows.length < Math.min(boardState.rowCount, 8)) {
+      nextRows.push(createEmptyRow(boardState.wordLength));
+    }
+
+    const normalizedRows = normalizeRows(nextRows, boardState.wordLength);
+    const nextFingerprint = getBoardFingerprint({
+      wordLength: boardState.wordLength,
+      rows: normalizedRows,
+    });
+    const previousFingerprint = getBoardFingerprint({
+      wordLength: state.wordLength,
+      rows: state.rows,
+    });
+    const changed = nextFingerprint !== previousFingerprint;
+
+    state.wordLength = boardState.wordLength;
+    state.rows = normalizedRows;
+    saveState();
+
+    return {
+      changed: changed,
+      fingerprint: nextFingerprint,
+      message: boardState.filledRowCount > 0 || changed ? '已从页面同步 ' + boardState.filledRowCount + ' 行线索' : '',
+    };
   }
 
   function getCompleteRows() {
@@ -502,6 +594,253 @@
       .filter(function (row) {
         return row.word.length === state.wordLength && row.pattern.length === state.wordLength && !row.pattern.includes('.');
       });
+  }
+
+  function readBoardStateFromPage() {
+    const board = findBestBoard();
+    if (!board) {
+      return null;
+    }
+
+    const rows = board.rows.map(function (rowElement) {
+      return readBoardRow(rowElement, board.wordLength);
+    });
+
+    return {
+      wordLength: board.wordLength,
+      rowCount: board.rows.length,
+      filledRowCount: rows.filter(function (row) {
+        return row.word || row.pattern.replace(/\./g, '');
+      }).length,
+      rows: rows,
+    };
+  }
+
+  function findBestBoard() {
+    const selectors = [
+      'div[dir="ltr"].bn-flex.relative.flex-col',
+      'div[dir="ltr"]',
+      'div.bn-flex.relative.flex-col',
+    ];
+    const seen = new Set();
+    const candidates = [];
+
+    for (const selector of selectors) {
+      for (const element of document.querySelectorAll(selector)) {
+        if (!(element instanceof HTMLElement) || seen.has(element)) {
+          continue;
+        }
+        seen.add(element);
+        if (!isVisible(element)) {
+          continue;
+        }
+        const rows = getBoardRowsFromContainer(element);
+        if (!rows.length) {
+          continue;
+        }
+        candidates.push({
+          root: element,
+          rows: rows,
+          wordLength: getBoardCells(rows[0]).length,
+          score: rows.length * 100 + getBoardCells(rows[0]).length,
+        });
+      }
+    }
+
+    if (!candidates.length) {
+      return null;
+    }
+
+    candidates.sort(function (left, right) {
+      return right.score - left.score;
+    });
+    return candidates[0];
+  }
+
+  function getBoardRowsFromContainer(container) {
+    const rows = [];
+    const counts = Object.create(null);
+
+    for (const child of container.children) {
+      if (!(child instanceof HTMLElement)) {
+        continue;
+      }
+      const cells = getBoardCells(child);
+      if (cells.length < 4 || cells.length > 10) {
+        continue;
+      }
+      rows.push(child);
+      counts[cells.length] = (counts[cells.length] || 0) + 1;
+    }
+
+    const preferredLength = Object.keys(counts)
+      .map(function (value) {
+        return Number(value);
+      })
+      .sort(function (left, right) {
+        const diff = counts[right] - counts[left];
+        return diff || right - left;
+      })[0];
+
+    if (!preferredLength || (counts[preferredLength] || 0) < 4) {
+      return [];
+    }
+
+    return rows.filter(function (rowElement) {
+      return getBoardCells(rowElement).length === preferredLength;
+    });
+  }
+
+  function getBoardCells(rowElement) {
+    return Array.from(rowElement.children).filter(function (child) {
+      return isBoardTileElement(child);
+    });
+  }
+
+  function isBoardTileElement(element) {
+    if (!(element instanceof HTMLElement)) {
+      return false;
+    }
+
+    const className = String(element.className || '');
+    return className.includes('aspect-square')
+      && className.includes('rounded-[6px]')
+      && className.includes('border')
+      && className.includes('touch-manipulation');
+  }
+
+  function readBoardRow(rowElement, wordLength) {
+    const cells = getBoardCells(rowElement).slice(0, wordLength);
+    let word = '';
+    let pattern = '';
+
+    for (const cell of cells) {
+      const letter = readTileLetter(cell);
+      const result = inferTileResult(cell, letter);
+      word += letter;
+      pattern += result;
+    }
+
+    return {
+      word: word,
+      pattern: pattern || createEmptyPattern(wordLength),
+    };
+  }
+
+  function readTileLetter(cell) {
+    return String(cell.innerText || '')
+      .replace(/\s+/g, '')
+      .toLowerCase()
+      .replace(/[^a-z]/g, '')
+      .slice(0, 1);
+  }
+
+  function inferTileResult(cell, letter) {
+    if (!letter) {
+      return '.';
+    }
+
+    const style = window.getComputedStyle(cell);
+    const classText = (String(cell.className || '') + ' ' + String(cell.getAttribute('style') || '')).toLowerCase();
+    const background = parseCssColor(style.backgroundColor);
+    const border = parseCssColor(style.borderColor);
+    const boxShadow = String(style.boxShadow || '').toLowerCase();
+    const hasFilledBackground = background.a > 0.05;
+
+    if (looksGreen(background, border, classText, boxShadow) && hasFilledBackground) {
+      return '2';
+    }
+    if (looksYellow(background, border, classText, boxShadow) && hasFilledBackground) {
+      return '1';
+    }
+    if (looksGray(background, border, classText, boxShadow) && hasFilledBackground) {
+      return '0';
+    }
+
+    return '.';
+  }
+
+  function parseCssColor(value) {
+    const raw = String(value || '').trim().toLowerCase();
+    if (!raw || raw === 'transparent') {
+      return { r: 0, g: 0, b: 0, a: 0 };
+    }
+
+    const match = raw.match(/rgba?\(([^)]+)\)/);
+    if (!match) {
+      return { r: 0, g: 0, b: 0, a: 0 };
+    }
+
+    const parts = match[1].split(',').map(function (item) {
+      return Number(item.trim());
+    });
+    return {
+      r: parts[0] || 0,
+      g: parts[1] || 0,
+      b: parts[2] || 0,
+      a: typeof parts[3] === 'number' && Number.isFinite(parts[3]) ? parts[3] : 1,
+    };
+  }
+
+  function looksGreen(background, border, classText, boxShadow) {
+    if (classText.includes('green') || classText.includes('success') || classText.includes('correct')) {
+      return true;
+    }
+    if (boxShadow.includes('green')) {
+      return true;
+    }
+    return isGreenColor(background) || isGreenColor(border);
+  }
+
+  function looksYellow(background, border, classText, boxShadow) {
+    if (classText.includes('yellow') || classText.includes('gold') || classText.includes('present')) {
+      return true;
+    }
+    if (boxShadow.includes('yellow') || boxShadow.includes('255, 250, 93') || boxShadow.includes('240, 185, 11')) {
+      return true;
+    }
+    return isYellowColor(background) || isYellowColor(border);
+  }
+
+  function looksGray(background, border, classText, boxShadow) {
+    if (classText.includes('gray') || classText.includes('grey') || classText.includes('absent') || classText.includes('wrong')) {
+      return true;
+    }
+    if (boxShadow.includes('rgba(0,0,0') || boxShadow.includes('rgba(0, 0, 0')) {
+      return true;
+    }
+    return isGrayColor(background) || isGrayColor(border);
+  }
+
+  function isGreenColor(color) {
+    return color.a > 0.05 && color.g >= 90 && color.g >= color.r + 18 && color.g >= color.b + 8;
+  }
+
+  function isYellowColor(color) {
+    return color.a > 0.05 && color.r >= 140 && color.g >= 120 && color.b <= 140 && Math.abs(color.r - color.g) <= 90;
+  }
+
+  function isGrayColor(color) {
+    return color.a > 0.05
+      && Math.abs(color.r - color.g) <= 18
+      && Math.abs(color.g - color.b) <= 18
+      && (color.r + color.g + color.b) / 3 <= 170;
+  }
+
+  function getBoardFingerprint(boardState) {
+    return JSON.stringify({
+      wordLength: boardState.wordLength,
+      rows: boardState.rows,
+    });
+  }
+
+  function joinNotice() {
+    return Array.from(arguments)
+      .map(function (value) {
+        return String(value || '').trim();
+      })
+      .filter(Boolean)
+      .join(' | ');
   }
 
   function runAnalysis(words, completeRows) {
@@ -571,6 +910,7 @@
       metricCard('已录入线索', String(payload.completeRows)),
       metricCard('候选数量', String(analysis.total)),
       metricCard('当前词库', escapeHtml(payload.sourceLabel)),
+      metricCard('线索来源', state.syncFromPage ? '页面' : '手动'),
       '</div>',
       '<div class="wotd-constraint-list">',
       constraintLine('固定位置', summary.fixed),
@@ -665,6 +1005,12 @@
   }
 
   function fillWordIntoPage(word) {
+    if (typeWordViaBoard(word)) {
+      runtime.lastNotice = '已输入到棋盘：' + word;
+      scheduleAnalysis();
+      return;
+    }
+
     const target = findEditableTarget();
     if (!target) {
       runtime.lastNotice = '没有找到可填入的输入框';
@@ -692,6 +1038,169 @@
       runtime.lastNotice = '填入失败：' + (error && error.message ? error.message : '未知错误');
       scheduleAnalysis();
     }
+  }
+
+  function typeWordViaBoard(word) {
+    if (!readBoardStateFromPage()) {
+      return false;
+    }
+
+    clickLikelyBoardCell();
+
+    for (let index = 0; index < state.wordLength + 1; index += 1) {
+      pressBoardKey('Backspace');
+    }
+    for (const letter of word.toUpperCase()) {
+      if (!pressBoardKey(letter)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function clickLikelyBoardCell() {
+    const board = findBestBoard();
+    if (!board) {
+      return false;
+    }
+
+    for (const row of board.rows) {
+      const cells = getBoardCells(row);
+      for (const cell of cells) {
+        if (!readTileLetter(cell)) {
+          cell.click();
+          return true;
+        }
+      }
+    }
+
+    const fallbackCell = getBoardCells(board.rows[board.rows.length - 1])[0];
+    if (fallbackCell) {
+      fallbackCell.click();
+      return true;
+    }
+    return false;
+  }
+
+  function pressBoardKey(key) {
+    return clickVirtualKeyboardKey(key) || dispatchSyntheticBoardKey(key);
+  }
+
+  function clickVirtualKeyboardKey(key) {
+    const labels = getBoardKeyLabels(key);
+    const candidates = Array.from(document.querySelectorAll('button, [role="button"], div'))
+      .filter(function (element) {
+        if (!(element instanceof HTMLElement)) {
+          return false;
+        }
+        if (runtime.elements.root && runtime.elements.root.contains(element)) {
+          return false;
+        }
+        if (!isVisible(element)) {
+          return false;
+        }
+
+        const rect = element.getBoundingClientRect();
+        if (rect.top < window.innerHeight * KEYBOARD_ZONE_TOP_RATIO) {
+          return false;
+        }
+
+        const label = normalizeBoardKeyLabel(element.innerText);
+        if (!label || labels.indexOf(label) === -1) {
+          return false;
+        }
+
+        return rect.width >= 28 && rect.height >= 28;
+      })
+      .sort(function (left, right) {
+        const leftArea = left.getBoundingClientRect().width * left.getBoundingClientRect().height;
+        const rightArea = right.getBoundingClientRect().width * right.getBoundingClientRect().height;
+        return rightArea - leftArea;
+      });
+
+    if (!candidates.length) {
+      return false;
+    }
+
+    candidates[0].click();
+    return true;
+  }
+
+  function dispatchSyntheticBoardKey(key) {
+    const activeTarget = document.activeElement instanceof HTMLElement ? document.activeElement : document.body;
+    if (activeTarget && activeTarget.focus) {
+      activeTarget.focus();
+    }
+
+    const normalized = normalizeSyntheticKey(key);
+    const keyCode = getKeyCode(normalized);
+    const eventInit = {
+      key: normalized,
+      code: getKeyCodeName(normalized),
+      keyCode: keyCode,
+      which: keyCode,
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+    };
+
+    const targets = [document, window];
+    if (activeTarget) {
+      targets.unshift(activeTarget);
+    }
+
+    for (const eventName of ['keydown', 'keypress', 'keyup']) {
+      for (const target of targets) {
+        target.dispatchEvent(new KeyboardEvent(eventName, eventInit));
+      }
+    }
+
+    return true;
+  }
+
+  function getBoardKeyLabels(key) {
+    if (key === 'Backspace') {
+      return ['BACKSPACE', 'DELETE', '⌫', '←', 'X'];
+    }
+    if (key === 'Enter') {
+      return ['ENTER'];
+    }
+    return [String(key || '').toUpperCase()];
+  }
+
+  function normalizeBoardKeyLabel(text) {
+    return String(text || '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toUpperCase();
+  }
+
+  function normalizeSyntheticKey(key) {
+    if (key === 'Backspace' || key === 'Enter') {
+      return key;
+    }
+    return String(key || '').toLowerCase();
+  }
+
+  function getKeyCodeName(key) {
+    if (key === 'Backspace') {
+      return 'Backspace';
+    }
+    if (key === 'Enter') {
+      return 'Enter';
+    }
+    return 'Key' + String(key).toUpperCase();
+  }
+
+  function getKeyCode(key) {
+    if (key === 'Backspace') {
+      return 8;
+    }
+    if (key === 'Enter') {
+      return 13;
+    }
+    const charCode = String(key || '').toUpperCase().charCodeAt(0);
+    return Number.isFinite(charCode) ? charCode : 0;
   }
 
   async function copyWord(word) {
