@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Binance WOTD Helper",
+  "version": "1.0.0",
+  "description": "在 Binance WOTD 页面内提供候选词建议和一键填词能力。",
+  "content_scripts": [
+    {
+      "matches": ["*://www.binance.com/*"],
+      "js": ["solver_core.js", "content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["wordlists/common_words.txt", "wordlists/full_words.txt"],
+      "matches": ["*://www.binance.com/*"]
+    }
+  ]
+}

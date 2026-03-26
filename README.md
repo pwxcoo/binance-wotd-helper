@@ -27,3 +27,9 @@ By using this tool, participants can significantly cut down the number of possib
 
 ## Disclaimer
 This script is for educational and fun purposes only. It is up to the user to use this tool responsibly and in accordance with Binance's rules and regulations related to the WOTD challenge.
+
+## Chrome Extension MVP
+
+这个仓库现在额外带了一个页面内助手版，目录在 [chrome-extension](./chrome-extension)。
+
+它会在 Binance WOTD 页面上注入一个浮窗，用来录入灰/黄/绿线索、计算候选词，并支持把建议词直接填到页面输入框里。

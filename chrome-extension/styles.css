@@ -1,0 +1,426 @@
+#binance-wotd-helper-root {
+  --wotd-bg: rgba(255, 255, 255, 0.96);
+  --wotd-panel: rgba(250, 252, 255, 0.96);
+  --wotd-border: rgba(23, 32, 51, 0.12);
+  --wotd-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+  --wotd-text: #182235;
+  --wotd-muted: #5d6880;
+  --wotd-primary: #f0b90b;
+  --wotd-primary-strong: #c58e00;
+  --wotd-primary-soft: rgba(240, 185, 11, 0.16);
+  --wotd-success: #1f8f5f;
+  --wotd-success-soft: rgba(31, 143, 95, 0.14);
+  --wotd-warning: #cb8f00;
+  --wotd-warning-soft: rgba(203, 143, 0, 0.14);
+  --wotd-danger: #bb3b3b;
+  --wotd-danger-soft: rgba(187, 59, 59, 0.14);
+  --wotd-gray: #7a869d;
+  --wotd-gray-soft: rgba(122, 134, 157, 0.16);
+  position: fixed;
+  top: 88px;
+  right: 20px;
+  z-index: 2147483646;
+  width: 388px;
+  max-width: calc(100vw - 24px);
+  font-family: "SF Pro Text", "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: var(--wotd-text);
+}
+
+@media (prefers-color-scheme: dark) {
+  #binance-wotd-helper-root {
+    --wotd-bg: rgba(23, 26, 33, 0.96);
+    --wotd-panel: rgba(30, 35, 41, 0.96);
+    --wotd-border: rgba(255, 255, 255, 0.08);
+    --wotd-shadow: 0 22px 50px rgba(0, 0, 0, 0.42);
+    --wotd-text: #f5f7fa;
+    --wotd-muted: #b7c0cf;
+    --wotd-primary-soft: rgba(240, 185, 11, 0.2);
+    --wotd-success-soft: rgba(47, 176, 116, 0.22);
+    --wotd-warning-soft: rgba(240, 185, 11, 0.22);
+    --wotd-danger-soft: rgba(222, 89, 89, 0.22);
+    --wotd-gray-soft: rgba(122, 134, 157, 0.22);
+  }
+}
+
+#binance-wotd-helper-root .wotd-panel {
+  background: linear-gradient(180deg, var(--wotd-bg), var(--wotd-panel));
+  border: 1px solid var(--wotd-border);
+  border-radius: 16px;
+  box-shadow: var(--wotd-shadow);
+  backdrop-filter: blur(14px);
+  overflow: hidden;
+}
+
+#binance-wotd-helper-root .wotd-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--wotd-border);
+}
+
+#binance-wotd-helper-root .wotd-title {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+#binance-wotd-helper-root .wotd-subtitle {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--wotd-muted);
+}
+
+#binance-wotd-helper-root .wotd-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+#binance-wotd-helper-root .wotd-body {
+  padding: 14px 16px 16px;
+}
+
+#binance-wotd-helper-root .wotd-body.is-minimized {
+  padding-top: 10px;
+}
+
+#binance-wotd-helper-root .wotd-minimized-text,
+#binance-wotd-helper-root .wotd-help,
+#binance-wotd-helper-root .wotd-note,
+#binance-wotd-helper-root .wotd-status,
+#binance-wotd-helper-root .wotd-empty {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--wotd-muted);
+}
+
+#binance-wotd-helper-root .wotd-help {
+  margin: 10px 0 12px;
+}
+
+#binance-wotd-helper-root .wotd-toolbar {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 10px;
+}
+
+#binance-wotd-helper-root .wotd-toolbar .wotd-primary-btn {
+  grid-column: 1 / -1;
+}
+
+#binance-wotd-helper-root .wotd-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#binance-wotd-helper-root .wotd-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--wotd-muted);
+}
+
+#binance-wotd-helper-root .wotd-number-input,
+#binance-wotd-helper-root .wotd-select,
+#binance-wotd-helper-root .wotd-word-input {
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid var(--wotd-border);
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--wotd-text);
+  font-size: 14px;
+  outline: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  #binance-wotd-helper-root .wotd-number-input,
+  #binance-wotd-helper-root .wotd-select,
+  #binance-wotd-helper-root .wotd-word-input {
+    background: rgba(17, 22, 29, 0.82);
+  }
+}
+
+#binance-wotd-helper-root .wotd-number-input:focus,
+#binance-wotd-helper-root .wotd-select:focus,
+#binance-wotd-helper-root .wotd-word-input:focus {
+  border-color: rgba(240, 185, 11, 0.8);
+  box-shadow: 0 0 0 3px var(--wotd-primary-soft);
+}
+
+#binance-wotd-helper-root .wotd-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#binance-wotd-helper-root .wotd-row {
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--wotd-border);
+  background: rgba(255, 255, 255, 0.52);
+}
+
+@media (prefers-color-scheme: dark) {
+  #binance-wotd-helper-root .wotd-row {
+    background: rgba(255, 255, 255, 0.03);
+  }
+}
+
+#binance-wotd-helper-root .wotd-row-top {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 32px;
+  gap: 8px;
+  align-items: center;
+}
+
+#binance-wotd-helper-root .wotd-row-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--wotd-primary-soft);
+  color: var(--wotd-primary-strong);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+#binance-wotd-helper-root .wotd-pattern-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+#binance-wotd-helper-root .wotd-pattern-cell,
+#binance-wotd-helper-root .wotd-primary-btn,
+#binance-wotd-helper-root .wotd-secondary-btn,
+#binance-wotd-helper-root .wotd-ghost-btn,
+#binance-wotd-helper-root .wotd-icon-btn {
+  border: none;
+  cursor: pointer;
+  transition: transform 0.12s ease, opacity 0.12s ease, background 0.12s ease;
+}
+
+#binance-wotd-helper-root .wotd-pattern-cell:hover,
+#binance-wotd-helper-root .wotd-primary-btn:hover,
+#binance-wotd-helper-root .wotd-secondary-btn:hover,
+#binance-wotd-helper-root .wotd-ghost-btn:hover,
+#binance-wotd-helper-root .wotd-icon-btn:hover {
+  transform: translateY(-1px);
+}
+
+#binance-wotd-helper-root .wotd-pattern-cell {
+  height: 38px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+}
+
+#binance-wotd-helper-root .wotd-pattern-cell.is-unknown {
+  background: var(--wotd-gray-soft);
+  color: var(--wotd-text);
+}
+
+#binance-wotd-helper-root .wotd-pattern-cell.is-absent {
+  background: var(--wotd-gray);
+}
+
+#binance-wotd-helper-root .wotd-pattern-cell.is-present {
+  background: var(--wotd-warning);
+}
+
+#binance-wotd-helper-root .wotd-pattern-cell.is-correct {
+  background: var(--wotd-success);
+}
+
+#binance-wotd-helper-root .wotd-row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+#binance-wotd-helper-root .wotd-primary-btn,
+#binance-wotd-helper-root .wotd-secondary-btn,
+#binance-wotd-helper-root .wotd-ghost-btn {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+#binance-wotd-helper-root .wotd-primary-btn {
+  background: var(--wotd-primary);
+  color: #1b1f24;
+}
+
+#binance-wotd-helper-root .wotd-secondary-btn {
+  background: var(--wotd-primary-soft);
+  color: var(--wotd-text);
+}
+
+#binance-wotd-helper-root .wotd-ghost-btn,
+#binance-wotd-helper-root .wotd-icon-btn {
+  background: transparent;
+  color: var(--wotd-muted);
+}
+
+#binance-wotd-helper-root .wotd-icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  font-size: 16px;
+}
+
+#binance-wotd-helper-root .wotd-row-remove-btn {
+  justify-self: end;
+}
+
+#binance-wotd-helper-root .wotd-analysis {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#binance-wotd-helper-root .wotd-status {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--wotd-border);
+}
+
+#binance-wotd-helper-root .wotd-status.is-loading {
+  background: var(--wotd-primary-soft);
+  color: var(--wotd-primary-strong);
+}
+
+#binance-wotd-helper-root .wotd-status.is-error {
+  background: var(--wotd-danger-soft);
+  color: var(--wotd-danger);
+}
+
+#binance-wotd-helper-root .wotd-status.is-success {
+  background: var(--wotd-success-soft);
+  color: var(--wotd-success);
+}
+
+#binance-wotd-helper-root .wotd-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+#binance-wotd-helper-root .wotd-metric {
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--wotd-border);
+  background: rgba(255, 255, 255, 0.55);
+}
+
+@media (prefers-color-scheme: dark) {
+  #binance-wotd-helper-root .wotd-metric {
+    background: rgba(255, 255, 255, 0.03);
+  }
+}
+
+#binance-wotd-helper-root .wotd-metric-label {
+  font-size: 11px;
+  color: var(--wotd-muted);
+}
+
+#binance-wotd-helper-root .wotd-metric-value {
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 700;
+  word-break: break-word;
+}
+
+#binance-wotd-helper-root .wotd-constraint-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#binance-wotd-helper-root .wotd-constraint-line {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 12px;
+}
+
+#binance-wotd-helper-root .wotd-constraint-label {
+  color: var(--wotd-muted);
+}
+
+#binance-wotd-helper-root .wotd-constraint-value {
+  color: var(--wotd-text);
+  word-break: break-word;
+}
+
+#binance-wotd-helper-root .wotd-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 280px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+#binance-wotd-helper-root .wotd-suggestion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--wotd-border);
+  background: rgba(255, 255, 255, 0.52);
+}
+
+@media (prefers-color-scheme: dark) {
+  #binance-wotd-helper-root .wotd-suggestion {
+    background: rgba(255, 255, 255, 0.03);
+  }
+}
+
+#binance-wotd-helper-root .wotd-suggestion-word {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+#binance-wotd-helper-root .wotd-suggestion-actions {
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  #binance-wotd-helper-root {
+    top: 14px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-width: none;
+  }
+
+  #binance-wotd-helper-root .wotd-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  #binance-wotd-helper-root .wotd-suggestion {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #binance-wotd-helper-root .wotd-suggestion-actions {
+    justify-content: flex-end;
+  }
+}

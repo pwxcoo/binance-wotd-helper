@@ -1,2 +1,5 @@
 sample
 configuration.yml
+__pycache__/
+*.pyc
+chrome-extension/wordlists/
