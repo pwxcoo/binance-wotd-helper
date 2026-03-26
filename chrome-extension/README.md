@@ -1,12 +1,18 @@
-# Binance WOTD Chrome Extension
+# BN助手 Chrome Extension
 
-这是给现有 `binance-wotd-helper` 补的一个页面内助手版。
+这是一个合并版 Binance 页面助手。
 
-它不替换原来的 `wotd.py` / `submit.py`，而是把候选词筛选逻辑搬到浏览器里，让你在 Binance WOTD 页面上直接录入线索、看候选词、填词。
+它把两个能力放进了同一个 Chrome 扩展里：
+
+- Alpha 页面：价差监控
+- WOTD 页面：猜词助手
+
+WOTD 这部分不替换原来的 `wotd.py` / `submit.py`，只是把候选词筛选逻辑搬到浏览器里。
 
 ## 当前能力
 
-- 在 Binance 页面右上角注入一个浮窗面板
+- 在 Binance Alpha 页面运行价差监控
+- 在 Binance WOTD 页面右上角注入一个浮窗面板
 - 默认自动读取当前页面棋盘结果
 - 识别失败时也支持手动录入 `猜测词 + 灰/黄/绿` 结果
 - 默认直接使用完整词库
@@ -20,16 +26,20 @@
 - 不读取 `configuration.yml`
 - 不直接调用你本地 Python 的 Cookie / Submit 流程
 - 不默认自动提交到 Binance
+- 不新增你自己的后端接口
 
 这样更稳，也更适合做成浏览器插件。
 
 ## 目录
 
 - `manifest.json`：Chrome 扩展入口
-- `content.js`：页面内浮窗和交互
-- `solver_core.js`：纯候选词筛选逻辑
-- `styles.css`：浮窗样式
-- `wordlists/`：浏览器端使用的精简词库
+- `background.js`：Alpha 通知相关后台脚本
+- `alpha_content.js`：Alpha 页面内容脚本
+- `alpha_styles.css`：Alpha 页面样式
+- `content.js`：WOTD 页面浮窗和交互
+- `solver_core.js`：WOTD 纯候选词筛选逻辑
+- `styles.css`：WOTD 浮窗样式
+- `wordlists/`：浏览器端使用的词库
 - `build_wordlists.py`：从父目录原始词库生成浏览器词库
 
 ## 安装方式
@@ -51,11 +61,10 @@ tools/binance-wotd-helper/chrome-extension
 
 ## 使用方式
 
-1. 打开 Binance 的 WOTD 页面
-2. 在右上角面板里设置词长
-3. 面板会自动同步页面棋盘并自动刷新候选词
-4. 顶部会直接显示推荐下一词
-5. 点候选词旁边的“填入”会优先往当前 WOTD 棋盘输入字母
+1. 把这个目录作为一个扩展加载到 Chrome
+2. 打开 Binance Alpha 页面时，会自动启用价差监控
+3. 打开 Binance WOTD 页面时，会自动启用猜词助手
+4. WOTD 面板会自动同步棋盘并直接显示推荐下一词
 
 ## 验证
 

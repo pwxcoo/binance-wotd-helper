@@ -1,0 +1,764 @@
+/* Binance Alpha 价差监控浮窗样式 */
+
+#binance-spread-monitor {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 999999;
+  min-width: 280px;
+  background: rgba(20, 21, 26, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #eaecef;
+  overflow: hidden;
+  transition: box-shadow 0.3s ease;
+}
+
+#binance-spread-monitor:hover {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* 头部拖拽区域 */
+#binance-spread-monitor .monitor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  cursor: move;
+  user-select: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#binance-spread-monitor .monitor-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #f0b90b;
+}
+
+#binance-spread-monitor .monitor-title::before {
+  content: '📊';
+  font-size: 16px;
+}
+
+#binance-spread-monitor .monitor-controls {
+  display: flex;
+  gap: 8px;
+}
+
+/* 每日成交量区域 */
+#binance-spread-monitor .daily-volume-section {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: rgba(240, 185, 11, 0.05);
+  border: 1px solid rgba(240, 185, 11, 0.15);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#binance-spread-monitor .daily-volume-section:hover {
+  background: rgba(240, 185, 11, 0.1);
+}
+
+#binance-spread-monitor .daily-volume-section.completed {
+  background: rgba(14, 203, 129, 0.14);
+  border-color: rgba(14, 203, 129, 0.45);
+  box-shadow: 0 0 0 1px rgba(14, 203, 129, 0.12), 0 10px 28px rgba(14, 203, 129, 0.12);
+}
+
+#binance-spread-monitor .daily-volume-section.completed:hover {
+  background: rgba(14, 203, 129, 0.18);
+}
+
+#binance-spread-monitor .daily-volume-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 0;
+}
+
+#binance-spread-monitor .daily-volume-row.wear-row {
+  align-items: flex-start;
+}
+
+#binance-spread-monitor .daily-volume-label-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#binance-spread-monitor .daily-volume-label {
+  font-size: 11px;
+  color: #848e9c;
+}
+
+#binance-spread-monitor .daily-volume-value {
+  font-size: 12px;
+  color: #eaecef;
+  font-family: 'SF Mono', 'Consolas', monospace;
+}
+
+#binance-spread-monitor .daily-volume-value.completed {
+  color: #0ecb81;
+  font-weight: 700;
+}
+
+#binance-spread-monitor .daily-volume-value.highlight {
+  color: #f0b90b;
+  font-weight: 600;
+}
+
+#binance-spread-monitor .daily-volume-value.positive {
+  color: #0ecb81;
+  font-weight: 600;
+}
+
+#binance-spread-monitor .daily-volume-value.negative {
+  color: #f6465d;
+  font-weight: 600;
+}
+
+#binance-spread-monitor .wear-detail-toggle {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #9aa4b8;
+  font-size: 11px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+#binance-spread-monitor .wear-detail-toggle:hover {
+  color: #eaecef;
+}
+
+#binance-spread-monitor-wear-panel {
+  position: fixed;
+  width: 360px;
+  max-width: min(360px, calc(100vw - 32px));
+  z-index: 999999;
+}
+
+#binance-spread-monitor-wear-panel.hidden {
+  display: none;
+}
+
+#binance-spread-monitor-wear-panel .wear-detail-side-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 12px 14px;
+  background: rgba(20, 21, 26, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+#binance-spread-monitor-wear-panel .wear-detail-side-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #eaecef;
+}
+
+#binance-spread-monitor-wear-panel .wear-detail-side-close {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #9aa4b8;
+  cursor: pointer;
+}
+
+#binance-spread-monitor-wear-panel .wear-detail-side-close:hover {
+  color: #eaecef;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+#binance-spread-monitor .wear-detail-panel,
+#binance-spread-monitor-wear-panel .wear-detail-panel {
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(17, 24, 39, 0.78);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+#binance-spread-monitor-wear-panel .wear-detail-panel {
+  margin-top: 0;
+  background: rgba(20, 21, 26, 0.95);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+#binance-spread-monitor .wear-detail-summary,
+#binance-spread-monitor-wear-panel .wear-detail-summary {
+  margin-bottom: 8px;
+  font-size: 11px;
+  color: #848e9c;
+}
+
+#binance-spread-monitor .wear-detail-list,
+#binance-spread-monitor-wear-panel .wear-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+#binance-spread-monitor-wear-panel .wear-detail-list {
+  max-height: min(520px, calc(100vh - 180px));
+}
+
+#binance-spread-monitor .wear-detail-item,
+#binance-spread-monitor .wear-detail-empty,
+#binance-spread-monitor-wear-panel .wear-detail-item,
+#binance-spread-monitor-wear-panel .wear-detail-empty {
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+#binance-spread-monitor .wear-detail-head,
+#binance-spread-monitor-wear-panel .wear-detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+#binance-spread-monitor .wear-detail-head-main,
+#binance-spread-monitor-wear-panel .wear-detail-head-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+#binance-spread-monitor .wear-detail-index,
+#binance-spread-monitor-wear-panel .wear-detail-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  color: #dbe3f1;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'SF Mono', 'Consolas', monospace;
+}
+
+#binance-spread-monitor .wear-detail-symbol,
+#binance-spread-monitor-wear-panel .wear-detail-symbol {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(240, 185, 11, 0.12);
+  border: 1px solid rgba(240, 185, 11, 0.22);
+  color: #f0b90b;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+#binance-spread-monitor .wear-detail-time,
+#binance-spread-monitor-wear-panel .wear-detail-time {
+  font-size: 11px;
+  color: #c2cad7;
+  font-family: 'SF Mono', 'Consolas', monospace;
+}
+
+#binance-spread-monitor .wear-detail-amount,
+#binance-spread-monitor-wear-panel .wear-detail-amount {
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'SF Mono', 'Consolas', monospace;
+}
+
+#binance-spread-monitor .wear-detail-meta,
+#binance-spread-monitor-wear-panel .wear-detail-meta {
+  margin-top: 3px;
+  font-size: 11px;
+  color: #9aa4b8;
+  font-family: 'SF Mono', 'Consolas', monospace;
+}
+
+#binance-spread-monitor .wear-detail-flag,
+#binance-spread-monitor-wear-panel .wear-detail-flag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(217, 70, 239, 0.16);
+  border: 1px solid rgba(217, 70, 239, 0.34);
+  color: #f5d0fe;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+#binance-spread-monitor .wear-detail-inline.positive,
+#binance-spread-monitor .wear-detail-amount.positive,
+#binance-spread-monitor-wear-panel .wear-detail-inline.positive,
+#binance-spread-monitor-wear-panel .wear-detail-amount.positive {
+  color: #0ecb81;
+}
+
+#binance-spread-monitor .wear-detail-inline.negative,
+#binance-spread-monitor .wear-detail-amount.negative,
+#binance-spread-monitor-wear-panel .wear-detail-inline.negative,
+#binance-spread-monitor-wear-panel .wear-detail-amount.negative {
+  color: #f6465d;
+}
+
+#binance-spread-monitor .wear-detail-item.flagged,
+#binance-spread-monitor-wear-panel .wear-detail-item.flagged {
+  border-color: rgba(217, 70, 239, 0.36);
+  background:
+    linear-gradient(135deg, rgba(217, 70, 239, 0.12), rgba(255, 255, 255, 0.03)),
+    rgba(255, 255, 255, 0.03);
+  box-shadow: inset 3px 0 0 rgba(217, 70, 239, 0.65);
+}
+
+#binance-spread-monitor .wear-detail-amount.critical,
+#binance-spread-monitor-wear-panel .wear-detail-amount.critical {
+  color: #e879f9;
+  text-shadow: 0 0 18px rgba(217, 70, 239, 0.32);
+}
+
+#binance-spread-monitor .wear-detail-alert-note,
+#binance-spread-monitor-wear-panel .wear-detail-alert-note {
+  color: #f5d0fe;
+}
+
+#binance-spread-monitor .control-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #848e9c;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+#binance-spread-monitor .control-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #eaecef;
+}
+
+/* 内容区域 */
+#binance-spread-monitor .monitor-content {
+  padding: 16px;
+}
+
+/* 主价差显示 */
+#binance-spread-monitor .spread-main {
+  text-align: center;
+  padding: 16px 0;
+  margin-bottom: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+}
+
+#binance-spread-monitor .spread-main.low-liquidity {
+  border: 1px solid rgba(240, 185, 11, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(240, 185, 11, 0.12);
+}
+
+#binance-spread-monitor .spread-label {
+  font-size: 12px;
+  color: #848e9c;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+#binance-spread-monitor .spread-value {
+  font-size: 32px;
+  font-weight: 700;
+  font-family: 'SF Mono', 'Consolas', monospace;
+  margin-bottom: 4px;
+  transition: color 0.3s ease;
+}
+
+#binance-spread-monitor .spread-value.positive {
+  color: #0ecb81;
+  text-shadow: 0 0 20px rgba(14, 203, 129, 0.3);
+}
+
+#binance-spread-monitor .spread-value.negative {
+  color: #f6465d;
+  text-shadow: 0 0 20px rgba(246, 70, 93, 0.3);
+}
+
+#binance-spread-monitor .spread-value.warning {
+  color: #f0b90b;
+  text-shadow: 0 0 20px rgba(240, 185, 11, 0.3);
+}
+
+#binance-spread-monitor .spread-percent {
+  font-size: 14px;
+  color: #848e9c;
+}
+
+#binance-spread-monitor .spread-percent.positive {
+  color: #0ecb81;
+}
+
+#binance-spread-monitor .spread-percent.negative {
+  color: #f6465d;
+}
+
+#binance-spread-monitor .spread-percent.warning {
+  color: #f0b90b;
+}
+
+#binance-spread-monitor .liquidity-warning {
+  margin-top: 10px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(240, 185, 11, 0.12);
+  color: #f0b90b;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* 折叠区域 */
+#binance-spread-monitor .collapsible-section {
+  margin-top: 12px;
+}
+
+#binance-spread-monitor .collapsible-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #848e9c;
+  transition: all 0.2s ease;
+}
+
+#binance-spread-monitor .collapsible-header:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #eaecef;
+}
+
+#binance-spread-monitor .collapse-icon {
+  font-size: 10px;
+}
+
+#binance-spread-monitor .collapsible-content {
+  padding-top: 12px;
+}
+
+/* 价格详情 */
+#binance-spread-monitor .price-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+#binance-spread-monitor .price-item {
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  text-align: center;
+}
+
+#binance-spread-monitor .price-item-label {
+  font-size: 11px;
+  color: #848e9c;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+#binance-spread-monitor .price-item-value {
+  font-size: 16px;
+  font-weight: 600;
+  font-family: 'SF Mono', 'Consolas', monospace;
+}
+
+#binance-spread-monitor .price-item-value.high {
+  color: #0ecb81;
+}
+
+#binance-spread-monitor .price-item-value.low {
+  color: #f6465d;
+}
+
+/* 统计信息 */
+#binance-spread-monitor .stats-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#binance-spread-monitor .stats-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 12px;
+}
+
+#binance-spread-monitor .stats-label {
+  color: #848e9c;
+}
+
+#binance-spread-monitor .stats-value {
+  color: #eaecef;
+  font-family: 'SF Mono', 'Consolas', monospace;
+}
+
+#binance-spread-monitor .stats-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#binance-spread-monitor .config-btn {
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #848e9c;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+#binance-spread-monitor .config-btn:hover {
+  background: #f0b90b;
+  color: #14151a;
+}
+
+/* 更新时间 */
+#binance-spread-monitor .update-time {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 11px;
+  color: #5e6673;
+  text-align: center;
+}
+
+#binance-spread-monitor .update-time::before {
+  content: '🔄 ';
+}
+
+/* 底部设置区域 */
+#binance-spread-monitor .monitor-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* 开关样式 */
+#binance-spread-monitor .toggle-switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+#binance-spread-monitor .toggle-switch input {
+  display: none;
+}
+
+#binance-spread-monitor .toggle-slider {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+#binance-spread-monitor .toggle-slider::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: #848e9c;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+#binance-spread-monitor .toggle-switch input:checked+.toggle-slider {
+  background: rgba(14, 203, 129, 0.3);
+}
+
+#binance-spread-monitor .toggle-switch input:checked+.toggle-slider::after {
+  left: 18px;
+  background: #0ecb81;
+}
+
+#binance-spread-monitor .toggle-label {
+  font-size: 11px;
+  color: #848e9c;
+  transition: color 0.2s ease;
+}
+
+#binance-spread-monitor .toggle-switch:hover .toggle-label {
+  color: #eaecef;
+}
+
+/* 成交额输入框 */
+#binance-spread-monitor .amount-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+#binance-spread-monitor .amount-label {
+  font-size: 11px;
+  color: #848e9c;
+  flex-shrink: 0;
+}
+
+#binance-spread-monitor .amount-input {
+  width: 70px;
+  padding: 4px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #eaecef;
+  font-size: 12px;
+  font-family: 'SF Mono', 'Consolas', monospace;
+  text-align: right;
+  transition: all 0.2s ease;
+}
+
+#binance-spread-monitor .amount-input:focus {
+  outline: none;
+  border-color: #f0b90b;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+#binance-spread-monitor .amount-input::-webkit-inner-spin-button,
+#binance-spread-monitor .amount-input::-webkit-outer-spin-button {
+  opacity: 0.5;
+}
+
+#binance-spread-monitor .amount-unit {
+  font-size: 11px;
+  color: #848e9c;
+}
+
+/* 最小化状态 */
+#binance-spread-monitor.minimized .monitor-content,
+#binance-spread-monitor.minimized .monitor-footer {
+  display: none;
+}
+
+#binance-spread-monitor.minimized {
+  min-width: auto;
+}
+
+/* 加载状态 */
+#binance-spread-monitor .loading {
+  text-align: center;
+  padding: 30px;
+  color: #848e9c;
+}
+
+#binance-spread-monitor .loading::after {
+  content: '';
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  margin-left: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #f0b90b;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#binance-spread-monitor {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* 数值更新闪烁效果 */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+#binance-spread-monitor .updating {
+  animation: pulse 0.3s ease;
+}
